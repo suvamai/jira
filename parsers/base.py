@@ -1,0 +1,153 @@
+"""Base class for broker-specific parsers."""
+
+import re
+from abc import ABC, abstractmethod
+from parse_result import ParseResult
+
+CONFIDENCE_RULE_BASED = 0.92
+
+
+class BaseBrokerParser(ABC):
+    """All broker parsers inherit from this and implement parse()."""
+
+    broker_key: str = ""
+
+    @abstractmethod
+    def parse(self, text: str) -> ParseResult:
+        """Parse PDF text and return a ParseResult."""
+        ...
+
+    # --- Shared helper methods ---
+
+    def _find(self, text: str, pattern: str, group: int = 1, default: str = "") -> str:
+        """Find a regex pattern and return the specified group, or default."""
+        m = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        return m.group(group).strip() if m else default
+
+    def _find_date(self, text: str, pattern: str) -> str:
+        """Find a date and normalize to YYYY-MM-DD."""
+        raw = self._find(text, pattern)
+        if not raw:
+            return ""
+        return self._normalize_date(raw)
+
+    def _normalize_date(self, raw: str) -> str:
+        """Convert common date formats to YYYY-MM-DD."""
+        raw = raw.strip()
+        if not raw:
+            return ""
+
+        # Already YYYY-MM-DD
+        m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", raw)
+        if m:
+            return raw
+
+        # MM/DD/YYYY or MM/DD/YY
+        m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", raw)
+        if m:
+            month, day, year = m.groups()
+            if len(year) == 2:
+                year = f"20{year}"
+            return f"{year}-{int(month):02d}-{int(day):02d}"
+
+        # MM-DD-YYYY
+        m = re.match(r"^(\d{1,2})-(\d{1,2})-(\d{2,4})$", raw)
+        if m:
+            month, day, year = m.groups()
+            if len(year) == 2:
+                year = f"20{year}"
+            return f"{year}-{int(month):02d}-{int(day):02d}"
+
+        return ""
+
+    def _find_quantity(self, text: str, pattern: str) -> tuple[int, str]:
+        """
+        Find quantity and availability rule.
+        Returns (quantity_int, availability_rule).
+        """
+        raw = self._find(text, pattern)
+        if not raw:
+            return 0, ""
+
+        # Check for "ALL AVAILABLE"
+        if re.search(r"ALL\s+AVAILABLE", raw, re.IGNORECASE):
+            # Extract the number before "OR ALL AVAILABLE"
+            m = re.search(r"([\d,]+)\s+(?:OR\s+)?ALL\s+AVAILABLE", raw, re.IGNORECASE)
+            qty = int(m.group(1).replace(",", "")) if m else 0
+            return qty, "All Available"
+
+        # Fixed quantity
+        m = re.search(r"([\d,]+)", raw)
+        qty = int(m.group(1).replace(",", "")) if m else 0
+        return qty, "Nth"
+
+    def _map_shipping_method(self, raw: str) -> str:
+        """Map raw shipping method text to standard value."""
+        if not raw:
+            return ""
+        raw_lower = raw.lower().strip()
+        if "email" in raw_lower or "e-mail" in raw_lower:
+            return "Email"
+        if "ftp" in raw_lower:
+            return "FTP"
+        return "Other"
+
+    def _detect_file_format(self, text: str) -> str:
+        """Detect file format from PDF text."""
+        lower = text.lower()
+        if "fixed field" in lower or "ascii fixed" in lower or "fixed field text format" in lower:
+            return "ASCII Fixed"
+        if "ascii delimited" in lower or "csv" in lower or "comma" in lower:
+            return "ASCII Delimited"
+        if "excel" in lower or ".xls" in lower:
+            return "Excel"
+        if "e-mail transmission" in lower:
+            return "Other"
+        return ""
+
+    # --- US state abbreviations for omit counting ---
+    _US_STATES = {
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+        "DC",
+    }
+
+    def _detect_state_omits(self, omission_description: str) -> str:
+        """
+        If omission_description contains 6+ US states, zip codes, or SCFs,
+        return "State Omits" for the other_fees field.
+        """
+        if not omission_description:
+            return ""
+        upper = omission_description.upper()
+        # Count state abbreviations
+        state_count = sum(1 for s in self._US_STATES if re.search(rf"\b{s}\b", upper))
+        # Count zip codes (5-digit or 3-digit SCF prefixes)
+        zip_matches = re.findall(r"\b\d{3,5}\b", omission_description)
+        total = state_count + len(zip_matches)
+        if total >= 6:
+            return "State Omits"
+        return ""
+
+    def _extract_special_seed_instructions(self, text: str) -> str:
+        """Extract special seed instructions from PDF text."""
+        # Look for "Insert:" or "Special Seed" patterns
+        m = re.search(r"(?:Insert|SEED\s*INSTRUCTIONS?)[:\s]+(.+?)(?:\n|$)", text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+        return ""
+
+    def _find_email(self, text: str, pattern: str = None) -> str:
+        """Find an email address, optionally near a pattern."""
+        if pattern:
+            section = self._find(text, pattern)
+            if section:
+                m = re.search(r"[\w.+-]+@[\w.-]+\.\w+", section)
+                if m:
+                    return m.group()
+        # Generic email search
+        m = re.search(r"[\w.+-]+@[\w.-]+\.\w+", text)
+        return m.group() if m else ""

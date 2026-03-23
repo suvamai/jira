@@ -1,0 +1,6 @@
+.env
+*.env
+__pycache__/
+broker_pdf/
+Test_pdf/
+SM Open Work Order List.XLSx

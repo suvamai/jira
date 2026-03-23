@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git add:*)",
+      "Bash(echo:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(wc:*)",
+      "Bash(pip install:*)",
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(pip list:*)",
+      "WebSearch",
+      "WebFetch(domain:pymupdf.readthedocs.io)",
+      "Bash(grep:*)",
+      "Bash(find /c/Users/suvam/Desktop/git_suvam/Jira_automation -type d -name *test* -o -type d -name *Test*)",
+      "mcp__claude_ai_Atlassian__getJiraIssue",
+      "mcp__claude_ai_Atlassian__editJiraIssue",
+      "Bash(python -c \":*)",
+      "Bash(PYTHONIOENCODING=utf-8 python parse_pipeline.py \"C:\\\\Users\\\\suvam\\\\Downloads\\\\Exchange Order 2316747, Franciscan Friars of the Atonement Graymoor, Sacred Heart Southern Missions Donors \\(1\\).pdf\" --dry-run --verbose)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c \":*)",
+      "Bash(PYTHONIOENCODING=utf-8 python parse_pipeline.py \"C:\\\\Users\\\\suvam\\\\Downloads\\\\Exchange Order 2316747, Franciscan Friars of the Atonement Graymoor, Sacred Heart Southern Missions Donors \\(1\\).pdf\")",
+      "mcp__claude_ai_Atlassian__getJiraIssueTypeMetaWithFields",
+      "mcp__claude_ai_Atlassian__getTransitionsForJiraIssue",
+      "Bash(rm JIRA_AUTO_KNOWLEDGE.md)",
+      "Bash(rm -rf .planning/)"
+    ]
+  }
+}
