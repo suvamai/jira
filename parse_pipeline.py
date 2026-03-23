@@ -47,10 +47,9 @@ def process_pdf(pdf_path: str, dry_run: bool = False, verbose: bool = False) -> 
     Returns dict with keys: success, ticket_key, source, warnings, errors.
     """
     from tools_pdf import extract_pdf_text
-    from broker_detector import detect_broker
-    from parsers import PARSER_REGISTRY
+    from parsers import detect_broker, PARSER_REGISTRY
     from claude_fallback import claude_fallback_parse
-    from result_validator import validate_result
+    from parse_result import validate_result
     from tools_jira import create_jira_ticket, search_jira_tickets, flag_for_review, attach_file_to_ticket
     from client_lookup import enrich_fields
 

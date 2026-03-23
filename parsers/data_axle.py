@@ -1,4 +1,4 @@
-"""Parser for Data Axle broker PDF orders."""
+"""Parser for Data Axle and SimioCloud broker PDF orders."""
 
 import re
 from parsers.base import BaseBrokerParser, CONFIDENCE_RULE_BASED
@@ -171,4 +171,9 @@ class DataAxleParser(BaseBrokerParser):
             omission_description=omission_description,
             other_fees=other_fees,
         )
+
+
+class SimioCloudParser(DataAxleParser):
+    """SimioCloud orders use the same format as Data Axle."""
+    broker_key: str = "simiocloud"
 
