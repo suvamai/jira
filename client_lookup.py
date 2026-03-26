@@ -49,7 +49,11 @@ def _word_overlap(a: str, b: str) -> float:
     wa, wb = _words(a), _words(b)
     if not wa:
         return 0.0
-    return len(wa & wb) / len(wa)
+    matches = sum(
+        1 for w in wa
+        if any(w == v or w.startswith(v) or v.startswith(w) for v in wb)
+    )
+    return matches / len(wa)
 
 
 def _clean_billing(raw: str) -> str:
@@ -199,7 +203,19 @@ def enrich_fields(
             log.info("Broker sheet match (score=%.2f): %s → %s", score, list_name or mailer_name, best["db_code"])
             return _row_to_result(best)
 
-    # 3. Full client sheet fallback
+    # 3. All other broker sheets (cross-broker fallback)
+    for mgr_key, sheet_name in _MANAGER_TO_SHEET.items():
+        if mgr_key == (list_manager or "").upper().strip():
+            continue  # already tried
+        rows = _load_broker_sheet(mgr_key)
+        if not rows:
+            continue
+        best, score = _best_match(rows, list_name, mailer_name)
+        if best and score >= 0.5:
+            log.info("Cross-broker sheet %r match (score=%.2f): %s → %s", sheet_name, score, list_name or mailer_name, best["db_code"])
+            return _row_to_result(best)
+
+    # 4. Full client sheet fallback
     best, score = _best_match(_load_all_clients(), list_name)
     if best and score >= 0.5:
         log.info("Full sheet match (score=%.2f): %s → %s", score, list_name, best["db_code"])

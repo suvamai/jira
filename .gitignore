@@ -1,6 +1,32 @@
+# Credentials
 .env
 *.env
+
+# Python
 __pycache__/
+*.pyc
+
+# PDFs and test files
 broker_pdf/
 Test_pdf/
-SM Open Work Order List.XLSx
+AMLC/
+
+# Excel data files (sensitive)
+*.xlsx
+*.xls
+~$*
+
+# Client profile documents (sensitive)
+Client Profiles/
+
+# Auth token cache
+email_scanner/token_cache.bin
+
+# Logs and runtime state
+email_scanner/logs/
+ticket_scanner/logs/
+ticket_scanner/reports/
+ticket_scanner/scanner_state.json
+
+# Local IDE/tool settings
+.claude/
